@@ -74,6 +74,20 @@ if not team_gw_points.empty:
     cols.append('Total')
     team_gw_points = team_gw_points[cols]
 
+# Reorder columns to have Total at the end
+cols = list(team_gw_points.columns)
+if 'Total' in cols:
+    cols.remove('Total')
+    cols.append('Total')
+team_gw_points = team_gw_points[cols]
+
+# Sort by Total descending
+team_gw_points = team_gw_points.sort_values(by='Total', ascending=False)
+
+# Display pivot table in Streamlit
+st.subheader("Team Points by Gameweek (Starting XI)")
+st.dataframe(team_gw_points)
+
 # Melt for scatter & line charts
 team_gw_points_melted = team_gw_points.reset_index().melt(
     id_vars='team_name',
