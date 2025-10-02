@@ -7,7 +7,7 @@ st.set_page_config(layout="wide")  # Full width layout
 
 # Load dataset
 df = pd.read_csv("Data/gw_data.csv")
-standings = pd.read_csv("Data/league_Standings.csv")
+standings = pd.read_csv("Data/league_standings.csv")
 
 # Merge team names
 df = df.merge(
