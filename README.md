@@ -7,18 +7,26 @@ It pulls data from the FPL Draft API and produces structured .csv files in a loc
 The Streamlit dashboard provides interactive visualizations for players, managers, and gameweek performance.
 
 It processes and saves the extracted data into structured `.csv` files stored in a local `Data/` folder.
+
 ---
 
 ## 📁 Project Structure
 FPL-25_26/
 
 ├── app.py               # Main Streamlit dashboard
+
 ├── extract.py           # Fetches data from the API
+
 ├── processing.py        # Processes CSVs and merges player/team data
+
 ├── league_classification.py # Creates league tables and HTML outputs
+
 ├── utils.py             # Helper functions: fetch API data, save CSV, etc.
+
 ├── Data/                # CSV files stored here (league standings, player stats)
+
 ├── requirements.txt     # Python dependencies for deployment
+
 └── README.md            # This file
 
 
@@ -51,7 +59,7 @@ git clone https://github.com/yourusername/fpl-draft-dashboard.git
 cd fpl-draft-dashboard
 ```
 
-2. Install dependencies
+### 2. Install dependencies
 This project uses standard libraries, but make sure you have the following installed:
 ```
 pip install -r requirements.txt
@@ -63,7 +71,7 @@ pandas
 plotly
 requests
 ```
-3. Run the Dashboard
+### 3. Run the Dashboard
 ```
 streamlit run app.py
 ```
@@ -88,21 +96,23 @@ https://draft.premierleague.com/api/game
 ## 🛠 Modules Overview
 app.py
 
-Streamlit dashboard with 2x2 visualizations and interactive filters
+- Streamlit dashboard with 2x2 visualizations and interactive filters
 
 extract.py
 
-Fetches data from the FPL Draft API and saves CSVs in Data/
+- Fetches data from the FPL Draft API and saves CSVs in Data/
 
 processing.py
 
-Cleans, merges, and prepares player and team data for analysis
+- Cleans, merges, and prepares player and team data for analysis
 
 league_classification.py
 
-Generates league tables and HTML reports from processed data
+- Generates league tables and HTML reports from processed data
 
 utils.py
+
+
 ## Shared utilities:
 
 - fetch_data(): Handles GET requests
