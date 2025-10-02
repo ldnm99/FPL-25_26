@@ -30,8 +30,8 @@ def load_players(players_csv=PLAYERS_CSV) -> pd.DataFrame:
 
 # ------------------ MAIN PROCESSING ------------------ #
 def main(output_file=OUTPUT_FILE):
-    """Build a player-centric dataset for all gameweeks."""
-    logging.info("🏁 Starting final player-centric dataset...")
+    """Build a player-centric dataset for all gameweeks including team positions."""
+    logging.info("🏁 Starting final player-centric dataset with team positions...")
 
     current_gw = fetch_current_gameweek()
     if current_gw == 0:
@@ -65,20 +65,29 @@ def main(output_file=OUTPUT_FILE):
         # Merge player names
         gw_stats = gw_stats.merge(players_df, on="ID", how="left")
 
-        # Initialize team_id column
-        gw_stats["team_id"] = pd.NA
-
-        # 2️⃣ Assign manager IDs for players
+        # 2️⃣ Assign manager IDs and team positions
+        all_picks = []
         for manager_id in managers:
             team_data = fetch_data(f"{TEAMS_URL}{manager_id}/event/{gw}")
             if not team_data or "picks" not in team_data:
                 continue
 
             picks = pd.DataFrame(team_data["picks"])
-            picked_ids = picks["element"].astype(int).tolist()
+            picks["manager_id"] = manager_id
+            picks["gameweek"] = gw
 
-            # Set team_id for players picked by this manager
-            gw_stats.loc[gw_stats["ID"].isin(picked_ids), "team_id"] = manager_id
+            # Rename columns: 'element' = player ID, 'position' = team position
+            picks.rename(columns={"element": "ID", "position": "team_position"}, inplace=True)
+
+            # Keep only relevant columns
+            all_picks.append(picks[["ID", "manager_id", "gameweek", "team_position"]])
+
+        # Merge picks with gameweek stats
+        if all_picks:
+            picks_df = pd.concat(all_picks, ignore_index=True)
+            gw_stats = gw_stats.merge(picks_df, on=["ID", "gameweek"], how="left")
+            # Fill team_id for backward compatibility
+            gw_stats["team_id"] = gw_stats["manager_id"]
 
         final_records.append(gw_stats)
 
@@ -92,70 +101,4 @@ def main(output_file=OUTPUT_FILE):
     # Save CSV
     final_df.to_csv(output_file, index=False, encoding="utf-8-sig")
     logging.info(f"✅ Player-centric final dataset saved: {output_file}")
-
-
-
-
-
-
-
-
-
-
-
-#combined_data = []
-#current_gameweek = fetch_data(GAME_STATUS_URL)['current_event']
-#
-## Get managers IDs from the CSV file
-#managers_ids = fetch_managers_ids()
-#
-## Load player names from CSV
-#players_df = pd.read_csv("Data/players_data.csv")
-#players_df['player_name'] = players_df['First_Name'] + ' ' + players_df['Last_Name']
-#players_df = players_df[['ID', 'player_name']]
-#players_df['ID'] = players_df['ID'].astype(int)  # Ensure ID type matches for merge
-#
-#def main():
-#    """Main function to fetch player stats and merge with managers' teams."""
-#    print("Starting final data processing...")
-#    print('----------------------------------------------------------------------')
-#
-#    # Loop through each gameweek
-#    for gw in range(1, current_gameweek + 1):
-#        """Fetch player stats and merge them with each manager's team picks for each gameweek."""
-#        gw_stats = get_player_gw_data(gw)
-#        gw_stats['gameweek'] = gw
-#        gw_stats = gw_stats[['ID', 'gameweek', 'minutes', 'goals_scored', 'assists', 'bonus',
-#                             'clean_sheets', 'expected_goals', 'expected_assists',
-#                             'expected_goal_involvements', 'expected_goals_conceded', 'total_points']]
-#
-#        gw_stats['ID'] = gw_stats['ID'].astype(int)
-#        gw_stats['gameweek'] = gw_stats['gameweek'].astype(int)
-#
-#        # Merge player names
-#        gw_stats = gw_stats.merge(players_df, on='ID', how='left')
-#
-#        # Fetch each manager's team picks for each gameweek
-#        for manager_id in managers_ids:
-#            team_data = fetch_data(f"{TEAMS_URL}{manager_id}/event/{gw}")
-#            if not team_data or 'picks' not in team_data:
-#                continue
-#            
-#            picks = pd.DataFrame(team_data['picks'])
-#            picks['manager_id'] = manager_id
-#            picks['gameweek'] = gw
-#            picks.rename(columns={'element': 'ID', 'position': 'team_position'}, inplace=True)
-#
-#            picks['ID'] = picks['ID'].astype(int)
-#            picks['gameweek'] = picks['gameweek'].astype(int)
-#
-#            # Merge gameweek picks with stats + player name
-#            merged = picks.merge(gw_stats, on=['ID', 'gameweek'], how='left')
-#            combined_data.append(merged)
-#
-#    # Concatenate all manager-team-player-gameweek data
-#    final_df = pd.concat(combined_data, ignore_index=True)
-#
-#    # Save to CSV
-#    final_df.to_csv("Data/final_data.csv", index=False)
-#    print("Saved final_data.csv")
+    logging.info("🏁 Process completed.")
