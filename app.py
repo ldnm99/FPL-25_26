@@ -34,6 +34,8 @@ min_gameweek, max_gameweek = st.slider(
 teams = df['team_name'].dropna().unique()
 selected_team = st.selectbox("Select Manager (Optional)", options=[None] + list(teams))
 
+selected_player = st.selectbox("Select Player (Optional)", options=[None] + list(df['player_name'].unique()))
+
 # Checkbox for owned players only
 owned_only = st.checkbox("Show only owned players")
 
@@ -45,7 +47,10 @@ if selected_team:
 
 if owned_only:
     filtered_df = filtered_df[filtered_df['team_name'].notnull()]
-
+    
+if selected_player:
+    filtered_df = filtered_df[filtered_df['player_name'] == selected_player]
+    
 # Display filtered dataframe
 selected_columns = st.sidebar.multiselect(
     "Select columns to display",
