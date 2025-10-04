@@ -39,6 +39,9 @@ selected_player = st.selectbox("Select Player (Optional)", options=[None] + list
 # Checkbox for owned players only
 owned_only = st.checkbox("Show only owned players")
 
+# Checkbox for not owned players only
+not_owned_only = st.checkbox("Show not owned players")
+
 # ---------------- FILTER DATA ----------------
 filtered_df = df[(df['gameweek'] >= min_gameweek) & (df['gameweek'] <= max_gameweek)]
 
@@ -47,6 +50,9 @@ if selected_team:
 
 if owned_only:
     filtered_df = filtered_df[filtered_df['team_name'].notnull()]
+
+if not_owned_only:
+    filtered_df = filtered_df[filtered_df['team_name'].isnull()]
     
 if selected_player:
     filtered_df = filtered_df[filtered_df['player_name'] == selected_player]
@@ -92,6 +98,53 @@ team_gw_points = team_gw_points.sort_values(by='Total', ascending=False)
 # Display pivot table in Streamlit
 st.subheader("Team Points by Gameweek (Starting XI)")
 st.dataframe(team_gw_points)
+
+# ---------------- TEAM AVERAGE POINTS CARDS ----------------
+st.subheader("Average Points per Gameweek (Starting XI)")
+
+if not team_gw_points.empty:
+    # Remove 'Total' column for average calculation
+    gw_cols = [c for c in team_gw_points.columns if c != 'Total']
+    
+    # Calculate average points per GW for each team
+    team_avg_points = (
+        team_gw_points[gw_cols]
+        .mean(axis=1)
+        .reset_index()
+        .rename(columns={0: "avg_points"})
+    )
+    team_avg_points.columns = ["team_name", "avg_points"]
+    
+    # Sort by highest average
+    team_avg_points = team_avg_points.sort_values(by="avg_points", ascending=False).reset_index(drop=True)
+
+    # Display cards in 3x2 grid
+    cols = st.columns(3)
+    for i, row in team_avg_points.head(7).iterrows():
+        with cols[i % 3]:
+            st.markdown(
+                f"""
+                <div style="
+                    background-color: #1E1E1E;
+                    border-radius: 15px;
+                    padding: 25px;
+                    margin-bottom: 20px;
+                    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+                    text-align: center;
+                    color: white;
+                ">
+                    <div style="font-size: 2.5rem; font-weight: 600; margin-bottom: 10px;">
+                        {row['avg_points']:.1f}
+                    </div>
+                    <div style="font-size: 1.2rem; font-weight: 500; opacity: 0.8;">
+                        {row['team_name']}
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+else:
+    st.info("No data available to calculate team averages.")
 
 # Melt for scatter & line charts
 team_gw_points_melted = team_gw_points.reset_index().melt(
