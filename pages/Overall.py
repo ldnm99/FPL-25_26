@@ -1,29 +1,27 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-
+import glob
 from visuals import calculate_team_gw_points, get_starting_lineup, get_teams_avg_points
 
 # ---------------- LOAD DATA ----------------
 st.set_page_config(layout="wide")  # Full width layout
 
 # Load dataset
-df = pd.read_csv("Data/gw_data.csv")
 standings = pd.read_csv("Data/league_standings.csv")
+# Load all GW Parquet files
+gw_files = sorted(glob.glob("Data/gameweeks_parquet/*.parquet"))
+df_list = [pd.read_parquet(f) for f in gw_files]
+df = pd.concat(df_list, ignore_index=True)
 
-# Merge team names
-df = df.merge(
-    standings[['manager_id', 'team_name']],
-    left_on='team_id',
-    right_on='manager_id',
-    how='left'
-)
+# Load overall player info
+players = pd.read_csv("Data/players_data.csv")
 
 # ---------------- DASHBOARD TITLE ----------------
 st.title("FPL Draft Data Dashboard")
 st.write("Explore players, managers, and gameweek stats.")
 
-# ---------------- FILTERS ----------------
+# ---------------- FILTERS ------------------------
 # Gameweek slider
 min_gameweek, max_gameweek = st.slider(
     "Select Gameweek", 
@@ -34,40 +32,14 @@ min_gameweek, max_gameweek = st.slider(
 
 # Manager filter
 teams = df['team_name'].dropna().unique()
-selected_team = st.selectbox("Select Manager (Optional)", options=[None] + list(teams))
+selected_team = st.selectbox("Select Manager", options=[None] + list(teams))
 
-selected_player = st.selectbox("Select Player (Optional)", options=[None] + list(df['player_name'].unique()))
-
-# Checkbox for owned players only
-owned_only = st.checkbox("Show only owned players")
-
-# Checkbox for not owned players only
-not_owned_only = st.checkbox("Show not owned players")
-
-# ---------------- FILTER DATA ----------------
+# ---------------- FILTER DATA --------------------
 filtered_df = df[(df['gameweek'] >= min_gameweek) & (df['gameweek'] <= max_gameweek)]
 
 if selected_team:
     filtered_df = filtered_df[filtered_df['team_name'] == selected_team]
-
-if owned_only:
-    filtered_df = filtered_df[filtered_df['team_name'].notnull()]
-
-if not_owned_only:
-    filtered_df = filtered_df[filtered_df['team_name'].isnull()]
     
-if selected_player:
-    filtered_df = filtered_df[filtered_df['player_name'] == selected_player]
-    
-# Display filtered dataframe
-selected_columns = st.sidebar.multiselect(
-    "Select columns to display",
-    options=list(filtered_df.columns),
-    default=list(filtered_df.columns)
-)
-st.subheader(f"Players Data from Gameweek {min_gameweek} to {max_gameweek}")
-st.dataframe(filtered_df[selected_columns])
-
 # --------------------------------------------------------------------------- VISUALIZATIONS --------------------------------------------------------------------------------
 # Get starting lineup
 starting_players = get_starting_lineup(filtered_df)
@@ -108,7 +80,6 @@ for i, row in team_avg_points.head(7).iterrows():
             """,
             unsafe_allow_html=True
         )
-
 
 # Melt for scatter & line charts
 team_gw_points_melted = team_gw_points.reset_index().melt(

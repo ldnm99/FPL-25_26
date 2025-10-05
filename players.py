@@ -34,22 +34,45 @@ def get_player_data(output_file: str = "Data/players_data.csv"):
 
     # Convert list of dicts to DataFrame (includes all fields)
     df = pd.DataFrame(players)
+
+    # Merge first_name and second_name into name and drop the original columns
+    df["name"] = df["first_name"] + " " + df["second_name"]
+    df.drop(["first_name", "second_name"], axis=1, inplace=True)
+    df = df.rename(columns={"id": "ID","element_type": "position",
+                            "assists": "Assists", "total_points": "Total points","clean_sheets": "CS", "goals_conceded": "Gc",
+                            "goals_scored": "Goals Scored",
+                            "expected_goals": "xG", 
+                            "expected_involvements": "xGi", 
+                            "expected_goals_conceded": "xGc",
+                            "code": "code",
+                            })
+
+    # Map team numbers to names
+    team_map = {
+        1: "Arsenal",
+        2: "Aston Villa",
+        3: "Brentford",
+        4: "Bournemouth",
+        5: "Brighton & Hove Albion",
+        6: "Burnley",
+        7: "Chelsea",
+        8: "Crystal Palace",
+        9: "Everton",
+        10: "Fulham",
+        11: "Leeds United",
+        12: "Liverpool",
+        13: "Manchester City",
+        14: "Manchester United",
+        15: "Newcastle United",
+        16: "Nottingham Forest",
+        17: "Sunderland",
+        18: "Tottenham",
+        19: "West Ham",
+        20: "Wolverhampton"
+    }
+
+    df["team"] = df["team"].map(team_map)
+
     df.to_csv(output_file, index=False, encoding="utf-8-sig")
     logging.info(f"✅ Full player dataset saved to {output_file}")
-
-    #
-    #if data:
-    #    players = data.get('elements', [])
-    #    player_data = [
-    #        [player['id'], player['first_name'], player['second_name'], player['team'], player['element_type'],
-    #         player['assists'],player['bonus'],  player['total_points'],player['expected_assists'],   player['clean_sheets'],
-    #         player['goals_conceded'], player['goals_scored'], player['minutes'], player['red_cards'],player['starts'],
-    #         player['expected_goals'],player['expected_goal_involvements'], player['expected_goals_conceded'],
-    #         player['code'], player['points_per_game']]
-    #        for player in players
-    #    ]
-    #    headers = ['ID', 'First_Name', 'Last_Name', 'Team', 'Position', 'Assists', 'bonus', 'Total points', 'xA', 'CS', 'Gc', 'Goals Scored', 'minutes',
-    #               'red_cards', 'starts', 'xG', 'xGi','xGc','code','PpG']
-    #    save_csv('Data/players_data.csv', headers, player_data)
-    #    print("Player data successfully retrieved.")
         

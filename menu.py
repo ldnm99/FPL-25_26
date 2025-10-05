@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-
 from visuals import get_starting_lineup, get_team_total_points
 
 # --- PAGE CONFIG ---
@@ -30,22 +29,10 @@ for i, name in enumerate(buttons):
             # Navigate to the page
             st.switch_page(f"pages/{name}.py")
 
-
-
 # ---------------- Main points table ----------------
-import pandas as pd
-
 # Load dataset
-df = pd.read_csv("Data/gw_data.csv")
+df = pd.read_parquet("Data/gw_data.parquet")
 standings = pd.read_csv("Data/league_standings.csv")
-
-# Merge team names
-df = df.merge(
-    standings[['manager_id', 'team_name']],
-    left_on='team_id',
-    right_on='manager_id',
-    how='left'
-)
 
 # Get starting lineup
 starting_players = get_starting_lineup(df)

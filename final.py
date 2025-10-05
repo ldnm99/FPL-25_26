@@ -1,4 +1,5 @@
 import logging
+import os
 import pandas as pd
 from utils import fetch_data, fetch_managers_ids, get_player_gw_data
 
@@ -7,7 +8,9 @@ BASE_URL        = "https://draft.premierleague.com/api"
 TEAMS_URL       = f"{BASE_URL}/entry/"
 GAME_STATUS_URL = f"{BASE_URL}/game"
 PLAYERS_CSV     = "Data/players_data.csv"
-OUTPUT_FILE     = "Data/gw_data.csv"
+GW_FOLDER       = "Data/gameweeks_parquet"
+MERGED_OUTPUT   = "Data/gw_data.parquet"
+STANDINGS_CSV   = "Data/league_standings.csv"
 
 
 # ------------------ LOGGING ------------------ #
@@ -22,16 +25,84 @@ def fetch_current_gameweek() -> int:
         return 0
     return data["current_event"]
 
-def load_players(players_csv=PLAYERS_CSV) -> pd.DataFrame:
+def load_players() -> pd.DataFrame:
     """Load player IDs and names from CSV."""
-    df = pd.read_csv(players_csv)
-    df["player_name"] = df["first_name"].fillna("") + " " + df["second_name"].fillna("")
-    return df[["id", "player_name"]].astype({"id": int})
+    df = pd.read_csv(PLAYERS_CSV)
+    df = df.astype({"ID": int})
+    return df
+
+def fetch_manager_picks(manager_id: int, gw: int) -> pd.DataFrame:
+    """Fetch a managers team picks for a given gameweek."""
+    url = f"{TEAMS_URL}/{manager_id}/event/{gw}"
+    data = fetch_data(url)
+    if not data or "picks" not in data:
+        return pd.DataFrame()
+
+    picks = pd.DataFrame(data["picks"])
+    picks.rename(columns={"element": "ID", "position": "team_position"}, inplace=True)
+    picks["manager_id"] = manager_id
+    picks["gameweek"] = gw
+    return picks[["ID", "manager_id", "gameweek", "team_position"]]
+
+def build_gameweek_data(gw: int, managers: list[int], players_df: pd.DataFrame) -> pd.DataFrame:
+    """Build a single gameweek DataFrame."""
+    logging.info(f"Processing Gameweek {gw}...")
+
+    gw_stats = get_player_gw_data(gw)
+    if gw_stats.empty:
+        logging.warning(f"No player stats found for GW{gw}")
+        return pd.DataFrame()
+
+    gw_stats.rename(columns={"id": "ID"}, inplace=True)
+    gw_stats["gameweek"] = gw
+    gw_stats = gw_stats.merge(players_df, on="ID", how="left")
+
+    # Collect all manager picks for the GW
+    picks = [fetch_manager_picks(mid, gw) for mid in managers]
+    picks = [p for p in picks if not p.empty]
+
+    if picks:
+        picks_df = pd.concat(picks, ignore_index=True)
+        gw_stats = gw_stats.merge(picks_df, on=["ID", "gameweek"], how="left")
+        gw_stats["team_id"] = gw_stats["manager_id"]
+
+    return gw_stats
+
+def save_gameweek(gw_df: pd.DataFrame, gw: int, standings_csv="Data/league_standings.csv"):
+    """Save a single gameweek file."""
+    os.makedirs(GW_FOLDER, exist_ok=True)
+    output_path = f"{GW_FOLDER}/gw_data_gw{gw}.parquet"
+
+    # ✅ Read the CSV first
+    standings_df = pd.read_csv(standings_csv)
+
+    # Merge team names
+    gw_df = gw_df.merge(
+        standings_df[['manager_id', 'team_name']],
+        left_on='team_id',
+        right_on='manager_id',
+        how='left'
+    )
+    
+    gw_df.to_parquet(output_path, index=False, engine="pyarrow")
+    logging.info(f"✅ Saved Gameweek {gw} as Parquet: {output_path}")
+
+def merge_all_gameweeks():
+    """Combine all GW CSVs into one big file."""
+    files = sorted([f for f in os.listdir(GW_FOLDER) if f.startswith("gw_data_gw") and f.endswith(".parquet")])
+    if not files:
+        logging.warning("No gameweek Parquet files found to merge.")
+        return
+
+    dfs = [pd.read_parquet(os.path.join(GW_FOLDER, f)) for f in files]
+    merged_df = pd.concat(dfs, ignore_index=True)
+    merged_df.to_parquet(MERGED_OUTPUT, index=False, engine="pyarrow")
+    logging.info(f"📦 Merged all gameweeks into {MERGED_OUTPUT}")
+
 
 # ------------------ MAIN PROCESSING ------------------ #
-def main(output_file=OUTPUT_FILE):
-    """Build a player-centric dataset for all gameweeks including team positions."""
-    logging.info("🏁 Starting final player-centric dataset with team positions...")
+def main():
+    logging.info("🏁 Starting incremental FPL gameweek data extraction...")
 
     current_gw = fetch_current_gameweek()
     if current_gw == 0:
@@ -44,61 +115,28 @@ def main(output_file=OUTPUT_FILE):
         return
 
     players_df = load_players()
-    players_df = players_df.rename(columns={"id": "ID"})
 
-    final_records = []
+    # Identify already processed GWs
+    os.makedirs(GW_FOLDER, exist_ok=True)
+    existing_gws = {
+        int(f.split("gw")[-1].split(".")[0])
+        for f in os.listdir(GW_FOLDER)
+        if f.startswith("gw_data_gw")
+    }
 
-    # Loop through each gameweek
+    logging.info(f"Already have data for GWs: {sorted(existing_gws)}")
+
+    # Fetch only missing GWs
     for gw in range(1, current_gw + 1):
-        logging.info(f"Processing Gameweek {gw}/{current_gw}...")
-
-        # 1️⃣ Fetch all player stats for this gameweek
-        gw_stats = get_player_gw_data(gw)
-        if gw_stats.empty:
-            logging.warning(f"No stats for GW{gw}, skipping...")
+        if gw in existing_gws:
+            logging.info(f"Skipping Gameweek {gw} (already saved)")
             continue
 
-        # Standardize column names
-        gw_stats = gw_stats.rename(columns={"id": "ID"})
-        gw_stats["gameweek"] = gw
+        gw_df = build_gameweek_data(gw, managers, players_df)
+        if not gw_df.empty:
+            save_gameweek(gw_df, gw)
 
-        # Merge player names
-        gw_stats = gw_stats.merge(players_df, on="ID", how="left")
+    # Rebuild master dataset
+    merge_all_gameweeks()
 
-        # 2️⃣ Assign manager IDs and team positions
-        all_picks = []
-        for manager_id in managers:
-            team_data = fetch_data(f"{TEAMS_URL}{manager_id}/event/{gw}")
-            if not team_data or "picks" not in team_data:
-                continue
-
-            picks = pd.DataFrame(team_data["picks"])
-            picks["manager_id"] = manager_id
-            picks["gameweek"] = gw
-
-            # Rename columns: 'element' = player ID, 'position' = team position
-            picks.rename(columns={"element": "ID", "position": "team_position"}, inplace=True)
-
-            # Keep only relevant columns
-            all_picks.append(picks[["ID", "manager_id", "gameweek", "team_position"]])
-
-        # Merge picks with gameweek stats
-        if all_picks:
-            picks_df = pd.concat(all_picks, ignore_index=True)
-            gw_stats = gw_stats.merge(picks_df, on=["ID", "gameweek"], how="left")
-            # Fill team_id for backward compatibility
-            gw_stats["team_id"] = gw_stats["manager_id"]
-
-        final_records.append(gw_stats)
-
-    # Concatenate all gameweeks
-    if not final_records:
-        logging.error("No data processed for final dataset.")
-        return
-
-    final_df = pd.concat(final_records, ignore_index=True)
-
-    # Save CSV
-    final_df.to_csv(output_file, index=False, encoding="utf-8-sig")
-    logging.info(f"✅ Player-centric final dataset saved: {output_file}")
-    logging.info("🏁 Process completed.")
+    logging.info("🏁 Incremental data extraction completed successfully.")
