@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
+from visuals import calculate_team_gw_points, get_starting_lineup, get_teams_avg_points
+
 # ---------------- LOAD DATA ----------------
 st.set_page_config(layout="wide")  # Full width layout
 
@@ -66,85 +68,47 @@ selected_columns = st.sidebar.multiselect(
 st.subheader(f"Players Data from Gameweek {min_gameweek} to {max_gameweek}")
 st.dataframe(filtered_df[selected_columns])
 
-# ---------------- VISUALIZATIONS ----------------
-starting_players = filtered_df[filtered_df['team_position'] <= 11]
+# --------------------------------------------------------------------------- VISUALIZATIONS --------------------------------------------------------------------------------
+# Get starting lineup
+starting_players = get_starting_lineup(filtered_df)
 
-# Pivot table
-team_gw_points = starting_players.pivot_table(
-    index='team_name',
-    columns='gameweek',
-    values='total_points',
-    aggfunc='sum',
-    fill_value=0
-)
+# Calculate team gameweek points
+team_gw_points = calculate_team_gw_points(starting_players)
 
-if not team_gw_points.empty:
-    team_gw_points['Total'] = team_gw_points.sum(axis=1)
-    cols = list(team_gw_points.columns)
-    cols.remove('Total')
-    cols.append('Total')
-    team_gw_points = team_gw_points[cols]
-
-# Reorder columns to have Total at the end
-cols = list(team_gw_points.columns)
-if 'Total' in cols:
-    cols.remove('Total')
-    cols.append('Total')
-team_gw_points = team_gw_points[cols]
-
-# Sort by Total descending
-team_gw_points = team_gw_points.sort_values(by='Total', ascending=False)
-
-# Display pivot table in Streamlit
+# Display team points
 st.subheader("Team Points by Gameweek (Starting XI)")
 st.dataframe(team_gw_points)
 
 # ---------------- TEAM AVERAGE POINTS CARDS ----------------
 st.subheader("Average Points per Gameweek (Starting XI)")
+team_avg_points = get_teams_avg_points(team_gw_points)
 
-if not team_gw_points.empty:
-    # Remove 'Total' column for average calculation
-    gw_cols = [c for c in team_gw_points.columns if c != 'Total']
-    
-    # Calculate average points per GW for each team
-    team_avg_points = (
-        team_gw_points[gw_cols]
-        .mean(axis=1)
-        .reset_index()
-        .rename(columns={0: "avg_points"})
-    )
-    team_avg_points.columns = ["team_name", "avg_points"]
-    
-    # Sort by highest average
-    team_avg_points = team_avg_points.sort_values(by="avg_points", ascending=False).reset_index(drop=True)
-
-    # Display cards in 3x2 grid
-    cols = st.columns(3)
-    for i, row in team_avg_points.head(7).iterrows():
-        with cols[i % 3]:
-            st.markdown(
-                f"""
-                <div style="
-                    background-color: #1E1E1E;
-                    border-radius: 15px;
-                    padding: 25px;
-                    margin-bottom: 20px;
-                    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-                    text-align: center;
-                    color: white;
-                ">
-                    <div style="font-size: 2.5rem; font-weight: 600; margin-bottom: 10px;">
-                        {row['avg_points']:.1f}
-                    </div>
-                    <div style="font-size: 1.2rem; font-weight: 500; opacity: 0.8;">
-                        {row['team_name']}
-                    </div>
+# Display cards in 3x2 grid
+cols = st.columns(3)
+for i, row in team_avg_points.head(7).iterrows():
+    with cols[i % 3]:
+        st.markdown(
+            f"""
+            <div style="
+                background-color: #1E1E1E;
+                border-radius: 15px;
+                padding: 25px;
+                margin-bottom: 20px;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+                text-align: center;
+                color: white;
+            ">
+                <div style="font-size: 2.5rem; font-weight: 600; margin-bottom: 10px;">
+                    {row['avg_points']:.1f}
                 </div>
-                """,
-                unsafe_allow_html=True
-            )
-else:
-    st.info("No data available to calculate team averages.")
+                <div style="font-size: 1.2rem; font-weight: 500; opacity: 0.8;">
+                    {row['team_name']}
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
 
 # Melt for scatter & line charts
 team_gw_points_melted = team_gw_points.reset_index().melt(
