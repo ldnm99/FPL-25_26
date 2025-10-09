@@ -96,6 +96,9 @@ def merge_all_gameweeks():
 
     dfs = [pd.read_parquet(os.path.join(GW_FOLDER, f)) for f in files]
     merged_df = pd.concat(dfs, ignore_index=True)
+    position_order = {1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD'}
+
+    merged_df['position'] = merged_df['position'].map(position_order)
     merged_df.to_parquet(MERGED_OUTPUT, index=False, engine="pyarrow")
     logging.info(f"📦 Merged all gameweeks into {MERGED_OUTPUT}")
 

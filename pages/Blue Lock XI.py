@@ -6,7 +6,7 @@ from visuals import calculate_team_gw_points, get_starting_lineup, get_team_tota
 
 # ---------------- CONFIG ----------------
 st.set_page_config(layout="wide")
-GW_DATA_PATH = "Data/gw_data.parquet"
+GW_DATA_PATH   = "Data/gw_data.parquet"
 STANDINGS_PATH = "Data/league_standings.csv"
 
 # ---------------- LOAD DATA ----------------

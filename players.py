@@ -73,6 +73,10 @@ def get_player_data(output_file: str = "Data/players_data.csv"):
 
     df["team"] = df["team"].map(team_map)
 
+    position_order = {1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD'}
+
+    df['position'] = df['position'].map(position_order)
+
     df.to_csv(output_file, index=False, encoding="utf-8-sig")
     logging.info(f"✅ Full player dataset saved to {output_file}")
         
