@@ -1,6 +1,5 @@
 import os
 import logging
-import argparse
 
 from league  import get_league_standings
 from players import get_player_data

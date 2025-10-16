@@ -129,46 +129,46 @@ event,team_h,team_a,team_h_difficulty,team_a_difficulty,kickoff_time,team_h_name
 13,16,6,3,3,2025-11-30T14:05:00Z,Nott'm Forest,Brighton
 13,19,12,4,2,2025-11-30T14:05:00Z,West Ham,Liverpool
 13,7,1,4,4,2025-11-30T16:30:00Z,Chelsea,Arsenal
-14,1,5,3,4,2025-12-03T20:00:00Z,Arsenal,Brentford
-14,4,9,2,3,2025-12-03T20:00:00Z,Bournemouth,Everton
-14,6,2,3,3,2025-12-03T20:00:00Z,Brighton,Aston Villa
-14,3,8,3,2,2025-12-03T20:00:00Z,Burnley,Crystal Palace
-14,10,13,4,3,2025-12-03T20:00:00Z,Fulham,Man City
-14,11,7,3,2,2025-12-03T20:00:00Z,Leeds,Chelsea
-14,12,17,2,5,2025-12-03T20:00:00Z,Liverpool,Sunderland
-14,14,19,2,3,2025-12-03T20:00:00Z,Man Utd,West Ham
-14,15,18,3,4,2025-12-03T20:00:00Z,Newcastle,Spurs
-14,20,16,3,3,2025-12-03T20:00:00Z,Wolves,Nott'm Forest
-15,2,1,4,4,2025-12-06T15:00:00Z,Aston Villa,Arsenal
+14,4,9,2,3,2025-12-02T19:30:00Z,Bournemouth,Everton
+14,10,13,4,3,2025-12-02T19:30:00Z,Fulham,Man City
+14,15,18,3,4,2025-12-02T20:15:00Z,Newcastle,Spurs
+14,1,5,3,4,2025-12-03T19:30:00Z,Arsenal,Brentford
+14,6,2,3,3,2025-12-03T19:30:00Z,Brighton,Aston Villa
+14,3,8,3,2,2025-12-03T19:30:00Z,Burnley,Crystal Palace
+14,20,16,3,3,2025-12-03T19:30:00Z,Wolves,Nott'm Forest
+14,11,7,3,2,2025-12-03T20:15:00Z,Leeds,Chelsea
+14,12,17,2,5,2025-12-03T20:15:00Z,Liverpool,Sunderland
+14,14,19,2,3,2025-12-04T20:00:00Z,Man Utd,West Ham
+15,2,1,4,4,2025-12-06T12:30:00Z,Aston Villa,Arsenal
 15,4,7,3,3,2025-12-06T15:00:00Z,Bournemouth,Chelsea
-15,6,19,2,3,2025-12-06T15:00:00Z,Brighton,West Ham
 15,9,16,3,3,2025-12-06T15:00:00Z,Everton,Nott'm Forest
-15,10,8,3,3,2025-12-06T15:00:00Z,Fulham,Crystal Palace
-15,11,12,4,2,2025-12-06T15:00:00Z,Leeds,Liverpool
 15,13,17,2,4,2025-12-06T15:00:00Z,Man City,Sunderland
 15,15,3,2,4,2025-12-06T15:00:00Z,Newcastle,Burnley
 15,18,5,3,3,2025-12-06T15:00:00Z,Spurs,Brentford
-15,20,14,3,3,2025-12-06T15:00:00Z,Wolves,Man Utd
-16,1,20,2,4,2025-12-13T15:00:00Z,Arsenal,Wolves
-16,5,11,2,3,2025-12-13T15:00:00Z,Brentford,Leeds
-16,3,10,3,2,2025-12-13T15:00:00Z,Burnley,Fulham
+15,11,12,4,2,2025-12-06T17:30:00Z,Leeds,Liverpool
+15,6,19,2,3,2025-12-07T14:00:00Z,Brighton,West Ham
+15,10,8,3,3,2025-12-07T16:30:00Z,Fulham,Crystal Palace
+15,20,14,3,3,2025-12-08T20:00:00Z,Wolves,Man Utd
 16,7,9,2,4,2025-12-13T15:00:00Z,Chelsea,Everton
-16,8,13,4,3,2025-12-13T15:00:00Z,Crystal Palace,Man City
 16,12,6,3,5,2025-12-13T15:00:00Z,Liverpool,Brighton
-16,14,4,3,3,2025-12-13T15:00:00Z,Man Utd,Bournemouth
-16,16,18,3,3,2025-12-13T15:00:00Z,Nott'm Forest,Spurs
-16,17,15,3,2,2025-12-13T15:00:00Z,Sunderland,Newcastle
-16,19,2,3,2,2025-12-13T15:00:00Z,West Ham,Aston Villa
-17,2,14,3,4,2025-12-20T15:00:00Z,Aston Villa,Man Utd
+16,3,10,3,2,2025-12-13T17:30:00Z,Burnley,Fulham
+16,1,20,2,4,2025-12-13T20:00:00Z,Arsenal,Wolves
+16,8,13,4,3,2025-12-14T14:00:00Z,Crystal Palace,Man City
+16,16,18,3,3,2025-12-14T14:00:00Z,Nott'm Forest,Spurs
+16,17,15,3,2,2025-12-14T14:00:00Z,Sunderland,Newcastle
+16,19,2,3,2,2025-12-14T14:00:00Z,West Ham,Aston Villa
+16,5,11,2,3,2025-12-14T16:30:00Z,Brentford,Leeds
+16,14,4,3,3,2025-12-15T20:00:00Z,Man Utd,Bournemouth
+17,15,7,3,4,2025-12-20T12:30:00Z,Newcastle,Chelsea
 17,4,3,2,3,2025-12-20T15:00:00Z,Bournemouth,Burnley
 17,6,17,2,3,2025-12-20T15:00:00Z,Brighton,Sunderland
-17,9,1,4,3,2025-12-20T15:00:00Z,Everton,Arsenal
-17,10,16,3,3,2025-12-20T15:00:00Z,Fulham,Nott'm Forest
-17,11,8,3,2,2025-12-20T15:00:00Z,Leeds,Crystal Palace
 17,13,19,2,4,2025-12-20T15:00:00Z,Man City,West Ham
-17,15,7,3,4,2025-12-20T15:00:00Z,Newcastle,Chelsea
-17,18,12,4,3,2025-12-20T15:00:00Z,Spurs,Liverpool
 17,20,5,3,3,2025-12-20T15:00:00Z,Wolves,Brentford
+17,18,12,4,3,2025-12-20T17:30:00Z,Spurs,Liverpool
+17,9,1,4,3,2025-12-21T14:00:00Z,Everton,Arsenal
+17,11,8,3,2,2025-12-21T14:00:00Z,Leeds,Crystal Palace
+17,2,14,3,4,2025-12-21T16:30:00Z,Aston Villa,Man Utd
+17,10,16,3,3,2025-12-22T20:00:00Z,Fulham,Nott'm Forest
 18,1,6,3,4,2025-12-27T15:00:00Z,Arsenal,Brighton
 18,5,4,3,3,2025-12-27T15:00:00Z,Brentford,Bournemouth
 18,3,9,2,2,2025-12-27T15:00:00Z,Burnley,Everton

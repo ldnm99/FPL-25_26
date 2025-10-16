@@ -1,108 +1,97 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import glob
-from visuals import calculate_team_gw_points, get_starting_lineup, get_teams_avg_points
+from data_utils import load_data, get_starting_lineup, calculate_team_gw_points, get_teams_avg_points
+
+# ---------------- CONFIG ----------------
+st.set_page_config(page_title="FPL Draft Overall Dashboard", layout="wide")
 
 # ---------------- LOAD DATA ----------------
-st.set_page_config(layout="wide")  # Full width layout
+@st.cache_data
+def load_all_data():
+    df, standings, gameweeks, fixtures = load_data(
+        gw_data_path="Data/gw_data.parquet",
+        standings_path="Data/league_standings.csv",
+        gameweeks_path="Data/gameweeks.csv",
+        fixtures_path="Data/fixtures.csv"
+    )
+    return df, standings
 
-# Load dataset
-standings = pd.read_csv("Data/league_standings.csv")
-# Load all GW Parquet files
-gw_files = sorted(glob.glob("Data/gameweeks_parquet/*.parquet"))
-df_list = [pd.read_parquet(f) for f in gw_files]
-df = pd.concat(df_list, ignore_index=True)
-
-# Load overall player info
-players = pd.read_csv("Data/players_data.csv")
+df, standings = load_all_data()
 
 # ---------------- DASHBOARD TITLE ----------------
-st.title("FPL Draft Data Dashboard")
-st.write("Explore players, managers, and gameweek stats.")
+st.title("FPL Draft Overall Dashboard")
+st.write("Explore managers and gameweek stats.")
 
-# ---------------- FILTERS ------------------------
-# Gameweek slider
-min_gameweek, max_gameweek = st.slider(
-    "Select Gameweek", 
-    min_value=int(df['gameweek'].min()), 
-    max_value=int(df['gameweek'].max()), 
-    value=(int(df['gameweek'].min()), int(df['gameweek'].max()))
+# ---------------- FILTERS ----------------
+min_gw, max_gw = int(df['gameweek'].min()), int(df['gameweek'].max())
+selected_gw_range = st.slider(
+    "Select Gameweek Range",
+    min_value=min_gw,
+    max_value=max_gw,
+    value=(min_gw, max_gw)
+)
+selected_team = st.selectbox(
+    "Select Manager",
+    options=[None] + sorted(df['team_name'].dropna().unique())
 )
 
-# Manager filter
-teams = df['team_name'].dropna().unique()
-selected_team = st.selectbox("Select Manager", options=[None] + list(teams))
-
-# ---------------- FILTER DATA --------------------
-filtered_df = df[(df['gameweek'] >= min_gameweek) & (df['gameweek'] <= max_gameweek)]
-
+# ---------------- FILTER DATA ----------------
+filtered_df = df[
+    (df['gameweek'] >= selected_gw_range[0]) &
+    (df['gameweek'] <= selected_gw_range[1])
+]
 if selected_team:
     filtered_df = filtered_df[filtered_df['team_name'] == selected_team]
-    
-# --------------------------------------------------------------------------- VISUALIZATIONS --------------------------------------------------------------------------------
-# Get starting lineup
+
+# ---------------- TEAM POINTS ----------------
 starting_players = get_starting_lineup(filtered_df)
-
-# Calculate team gameweek points
 team_gw_points = calculate_team_gw_points(starting_players)
-
-# Display team points
-st.subheader("Team Points by Gameweek (Starting XI)")
-st.dataframe(team_gw_points)
-
-# ---------------- TEAM AVERAGE POINTS CARDS ----------------
-st.subheader("Average Points per Gameweek (Starting XI)")
 team_avg_points = get_teams_avg_points(team_gw_points)
 
-# Display cards in 3x2 grid
+st.subheader("🏆 Team Points by Gameweek (Starting XI)")
+st.dataframe(team_gw_points, use_container_width=True)
+
+st.subheader("Average Points per Gameweek (Starting XI)")
 cols = st.columns(3)
-for i, row in team_avg_points.head(7).iterrows():
+for i, row in team_avg_points.iterrows():
     with cols[i % 3]:
         st.markdown(
             f"""
             <div style="
                 background-color: #1E1E1E;
                 border-radius: 15px;
-                padding: 25px;
+                padding: 20px;
                 margin-bottom: 20px;
                 box-shadow: 0 4px 10px rgba(0,0,0,0.3);
                 text-align: center;
                 color: white;
             ">
-                <div style="font-size: 2.5rem; font-weight: 600; margin-bottom: 10px;">
-                    {row['avg_points']:.1f}
-                </div>
-                <div style="font-size: 1.2rem; font-weight: 500; opacity: 0.8;">
-                    {row['team_name']}
-                </div>
+                <div style="font-size: 2rem; font-weight: 600;">{row['avg_points']:.1f}</div>
+                <div style="font-size: 1.1rem; font-weight: 500; opacity: 0.8;">{row['team_name']}</div>
             </div>
             """,
             unsafe_allow_html=True
         )
 
-# Melt for scatter & line charts
+# ---------------- TEAM POINTS MELTED ----------------
 team_gw_points_melted = team_gw_points.reset_index().melt(
     id_vars='team_name',
     var_name='gameweek',
     value_name='points'
 ) if not team_gw_points.empty else pd.DataFrame(columns=['team_name', 'gameweek', 'points'])
 
-# Remove 'Total' and convert gameweek to int
+# Remove 'Total' column
 team_gw_points_melted = team_gw_points_melted[team_gw_points_melted['gameweek'] != 'Total']
-team_gw_points_melted['gameweek'] = team_gw_points_melted['gameweek'].astype(int) if not team_gw_points_melted.empty else pd.Series(dtype=int)
+if not team_gw_points_melted.empty:
+    team_gw_points_melted['gameweek'] = team_gw_points_melted['gameweek'].astype(int)
+    team_gw_points_melted = team_gw_points_melted[
+        (team_gw_points_melted['gameweek'] >= selected_gw_range[0]) &
+        (team_gw_points_melted['gameweek'] <= selected_gw_range[1])
+    ]
 
-# Filter by gameweek
-team_gw_points_melted = team_gw_points_melted[
-    (team_gw_points_melted['gameweek'] >= min_gameweek) &
-    (team_gw_points_melted['gameweek'] <= max_gameweek)
-] if not team_gw_points_melted.empty else team_gw_points_melted
-
-# ---------------- DASHBOARD ----------------
-st.title("Current League Standings")
-
-# Top Row: Line Charts
-st.subheader("Line Charts")
+# ---------------- LINE & CUMULATIVE CHARTS ----------------
+st.subheader("Team Points Overview")
 col1, col2 = st.columns(2)
 
 with col1:
@@ -135,13 +124,16 @@ with col2:
     else:
         st.info("No data for the selected gameweek/manager.")
 
-# Bottom Row: Heatmap & Scatter
+# ---------------- HEATMAP & SCATTER ----------------
 st.subheader("Heatmap & Scatter")
 col3, col4 = st.columns(2)
 
-# Filter pivot table columns by gameweek slider
-heatmap_data = team_gw_points.loc[:, [col for col in team_gw_points.columns if col != 'Total']]
-heatmap_data = heatmap_data.loc[:, heatmap_data.columns[(heatmap_data.columns >= min_gameweek) & (heatmap_data.columns <= max_gameweek)]] if not heatmap_data.empty else heatmap_data
+heatmap_data = team_gw_points.loc[:, [c for c in team_gw_points.columns if c != 'Total']]
+if not heatmap_data.empty:
+    heatmap_data = heatmap_data.loc[:, heatmap_data.columns[
+        (heatmap_data.columns >= selected_gw_range[0]) & 
+        (heatmap_data.columns <= selected_gw_range[1])
+    ]]
 
 with col3:
     if not heatmap_data.empty:
@@ -173,3 +165,4 @@ with col4:
         st.plotly_chart(fig_scatter, use_container_width=True)
     else:
         st.info("No data for the selected gameweek/manager.")
+# ---------------- END OF DASHBOARD ----------------
