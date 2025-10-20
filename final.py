@@ -131,11 +131,12 @@ def main():
 
     # Fetch only missing GWs
     for gw in range(1, current_gw + 1):
-        if gw in existing_gws:
+        if gw < current_gw and gw in existing_gws:
             logging.info(f"Skipping Gameweek {gw} (already saved)")
             continue
-
-        gw_df = build_gameweek_data(gw, managers, players_df)
+        elif gw == current_gw:
+           gw_df = build_gameweek_data(gw, managers, players_df)
+           
         if not gw_df.empty:
             save_gameweek(gw_df, gw)
 
