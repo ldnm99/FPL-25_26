@@ -96,12 +96,89 @@ def merge_all_gameweeks():
 
     dfs = [pd.read_parquet(os.path.join(GW_FOLDER, f)) for f in files]
     merged_df = pd.concat(dfs, ignore_index=True)
-    position_order = {1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD'}
-
-    merged_df['position'] = merged_df['position'].map(position_order)
+    merged_df = rename_columns(merged_df)
     merged_df.to_parquet(MERGED_OUTPUT, index=False, engine="pyarrow")
     logging.info(f"📦 Merged all gameweeks into {MERGED_OUTPUT}")
 
+def rename_columns(df: pd.DataFrame) -> pd.DataFrame:
+    # --- Step 1: Rename columns ---
+    rename_map = {
+        "minutes_x": "gw_minutes",
+        "goals_scored_x": "gw_goals",
+        "assists_x": "gw_assists",
+        "clean_sheets": "gw_clean_sheets",
+        "goals_conceded": "gw_goals_conceded",
+        "bps_x": "gw_bps",
+        "bonus_x": "gw_bonus",
+        "ict_index_x": "gw_ict_index",
+        "total_points_x": "gw_points",
+        "in_dreamteam": "gw_in_dreamteam",
+        "expected_goals": "gw_expected_goals",
+        "expected_assists_x": "gw_expected_assists",
+        "expected_goal_involvements_x": "gw_expected_goal_involvements",
+        "expected_goals_conceded": "gw_expected_goals_conceded",
+        "own_goals_x": "gw_own_goals",
+        "penalties_saved_x": "gw_penalties_saved",
+        "penalties_missed_x": "gw_penalties_missed",
+        "yellow_cards_x": "gw_yellow_cards",
+        "red_cards_x": "gw_red_cards",
+        "saves_x": "gw_saves",
+        "influence_x": "gw_influence",
+        "creativity_x": "gw_creativity",
+        "threat_x": "gw_threat",
+        "starts_x": "gw_starts",
+        "clearances_blocks_interceptions_x": "gw_clearances_blocks_interceptions",
+        "recoveries_x": "gw_recoveries",
+        "tackles_x": "gw_tackles",
+        "defensive_contribution_x": "gw_defensive_contribution",
+    
+        # --- Season stats ---
+        "minutes_y": "season_minutes",
+        "goals_scored_y": "season_goals",
+        "assists_y": "season_assists",
+        "bps_y": "season_bps",
+        "bonus_y": "season_bonus",
+        "ict_index_y": "season_ict_index",
+        "total_points_y": "season_points",
+        "xG": "season_expected_goals",
+        "xGc": "season_expected_goals_conceded",
+        "CS": "season_clean_sheets",
+        "Gc": "season_goals_conceded",
+        "own_goals_y": "season_own_goals",
+        "penalties_saved_y": "season_penalties_saved",
+        "penalties_missed_y": "season_penalties_missed",
+        "yellow_cards_y": "season_yellow_cards",
+        "red_cards_y": "season_red_cards",
+        "saves_y": "season_saves",
+        "influence_y": "season_influence",
+        "creativity_y": "season_creativity",
+        "threat_y": "season_threat",
+        "starts_y": "season_starts",
+        "expected_assists_y": "season_expected_assists",
+        "expected_goal_involvements_y": "season_expected_goal_involvements",
+        "clearances_blocks_interceptions_y": "season_clearances_blocks_interceptions",
+        "recoveries_y": "season_recoveries",
+        "tackles_y": "season_tackles",
+        "defensive_contribution_y": "season_defensive_contribution",
+    
+        # --- Identifiers ---
+        "ID": "player_id",
+        "team_id": "manager_team_id",
+        "team_name": "manager_team_name",
+        "manager_id_x": "manager_id",
+        "manager_id_y": "manager_id",
+        "web_name": "short_name",
+        "name": "full_name",
+        "team": "real_team",
+        "gameweek": "gw",
+    }
+
+    df = df.rename(columns=rename_map)
+    # --- Step 2: Remove duplicated columns ---
+    # Drop duplicated manager_id or repeated metrics if both versions exist
+    df = df.loc[:, ~df.columns.duplicated()]
+
+    return df
 
 # ------------------ MAIN PROCESSING ------------------ #
 def main():
@@ -131,14 +208,18 @@ def main():
 
     # Fetch only missing GWs
     for gw in range(1, current_gw + 1):
+        # Skip past GWs if already saved
         if gw < current_gw and gw in existing_gws:
             logging.info(f"Skipping Gameweek {gw} (already saved)")
             continue
-        elif gw == current_gw:
-           gw_df = build_gameweek_data(gw, managers, players_df)
-           
+        
+        gw_df = build_gameweek_data(gw, managers, players_df)
+        
         if not gw_df.empty:
             save_gameweek(gw_df, gw)
+            logging.info(f"Saved Gameweek {gw}")
+        else:
+            logging.warning(f"No data for Gameweek {gw}")
 
     # Rebuild master dataset
     merge_all_gameweeks()

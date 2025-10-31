@@ -13,13 +13,13 @@ fixtures = pd.read_csv("Data/fixtures.csv")
 
 # --- TEAM MAPPINGS ---
 teams = {
-    1: "Arsenal", 2: "Aston Villa", 5: "Brentford", 4: "Bournemouth",
-    6: "Brighton", 3: "Burnley", 7: "Chelsea", 8: "Crystal Palace",
-    9: "Everton", 10: "Fulham", 11: "Leeds United", 12: "Liverpool",
-    13: "Manchester City", 14: "Manchester United", 15: "Newcastle United",
-    16: "Nottingham Forest", 17: "Sunderland", 18: "Tottenham",
-    19: "West Ham", 20: "Wolverhampton"
-}
+        1: "Arsenal", 2: "Aston Villa", 3: "Burnley", 4: "Bournemouth",
+        5: "Brentford", 6: "Brighton", 7: "Chelsea", 8: "Crystal Palace",
+        9: "Everton", 10: "Fulham", 11: "Leeds United", 12: "Liverpool",
+        13: "Manchester City", 14: "Manchester United", 15: "Newcastle United",
+        16: "Nottingham Forest", 17: "Sunderland", 18: "Tottenham",
+        19: "West Ham", 20: "Wolverhampton"
+    }
 
 fixtures["team_h_name"] = fixtures["team_h"].map(teams)
 fixtures["team_a_name"] = fixtures["team_a"].map(teams)

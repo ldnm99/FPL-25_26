@@ -1,4 +1,3 @@
-# visuals_utils.py
 import streamlit as st
 import plotly.express as px
 import pandas as pd
@@ -31,7 +30,7 @@ def display_overview(manager_name: str, manager_df: pd.DataFrame):
         fig = px.pie(
             points_per_player_position(starting_players),
             names='position',
-            values='total_points',
+            values='gw_points',
             title="Points Distribution by Position",
             color_discrete_sequence=px.colors.qualitative.Plotly
         )
@@ -41,7 +40,7 @@ def display_overview(manager_name: str, manager_df: pd.DataFrame):
 # ---------------- PERFORMANCE TREND ----------------
 def display_performance_trend(manager_name: str, df: pd.DataFrame):
     st.header("📈 Points Progression")
-    manager_df = df[df['team_name'] == manager_name]
+    manager_df = df[df['manager_team_name'] == manager_name]
     starting_players = get_starting_lineup(manager_df)
     team_gw_points = calculate_team_gw_points(starting_players)
 
@@ -50,11 +49,12 @@ def display_performance_trend(manager_name: str, df: pd.DataFrame):
 
     # League average (excluding current manager)
     all_starting = get_starting_lineup(df)
-    all_team_gw_points = all_starting.groupby(['team_name', 'gameweek'])['total_points'].sum().reset_index()
-    other_teams = all_team_gw_points[all_team_gw_points['team_name'] != manager_name]
-    league_avg = other_teams.groupby('gameweek')['total_points'].mean().reset_index().rename(columns={'total_points':'avg_points'})
+    all_team_gw_points = all_starting.groupby(['manager_team_name', 'gw'])['gw_points'].sum().reset_index()
+    other_teams = all_team_gw_points[all_team_gw_points['manager_team_name'] != manager_name]
+    league_avg = other_teams.groupby('gw')['gw_points'].mean().reset_index().rename(columns={'gw_points':'avg_points'})
 
-    comparison_df = manager_points.merge(league_avg, on='gameweek', how='left')
+    comparison_df = manager_points.merge(league_avg, left_on='gameweek', right_on='gw', how='left')
+    comparison_df.drop(columns='gw', inplace=True)
     plot_df = comparison_df.melt(id_vars='gameweek', var_name='Type', value_name='Points')
 
     fig = px.line(plot_df, x='gameweek', y='Points', color='Type', markers=True,
@@ -69,11 +69,11 @@ def display_performance_trend(manager_name: str, df: pd.DataFrame):
 # ---------------- CURRENT GAMEWEEK ----------------
 def display_latest_gw(manager_df: pd.DataFrame):
     st.header("🎯 Latest Gameweek Lineup")
-    latest_gw = manager_df['gameweek'].max()
-    latest_gw_df = manager_df[manager_df['gameweek'] == latest_gw].sort_values('team_position')
+    latest_gw = manager_df['gw'].max()
+    latest_gw_df = manager_df[manager_df['gw'] == latest_gw].sort_values('team_position')
 
     latest_gw_df = latest_gw_df.rename(columns={
-        'name':'Player', 'team':'Team', 'team_position':'Squad Position', 'event_points':'Points'
+        'full_name':'Player', 'real_team':'Team', 'team_position':'Squad Position', 'gw_points':'Points'
     })
 
     if latest_gw_df.empty:
@@ -95,7 +95,7 @@ def display_top_performers(manager_df: pd.DataFrame):
 def display_player_progression(manager_df: pd.DataFrame):
     st.header("📊 Player Points Over Time")
     pivot = get_player_progression(manager_df)
-    fig = px.line(pivot.reset_index(), x='gameweek', y=pivot.columns, title="Player Points Progression")
+    fig = px.line(pivot.reset_index(), x='gw', y=pivot.columns, title="Player Points Progression")
     st.plotly_chart(fig, use_container_width=True)
 
 

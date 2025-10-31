@@ -1,5 +1,5 @@
 import logging
-from utils import fetch_data,save_csv
+from utils import fetch_data
 import pandas as pd
 
 # Define URLs
@@ -34,47 +34,46 @@ def get_player_data(output_file: str = "Data/players_data.csv"):
 
     # Convert list of dicts to DataFrame (includes all fields)
     df = pd.DataFrame(players)
+    
+    
 
     # Merge first_name and second_name into name and drop the original columns
     df["name"] = df["first_name"] + " " + df["second_name"]
-    df.drop(["first_name", "second_name"], axis=1, inplace=True)
-    df = df.rename(columns={"id": "ID","element_type": "position",
-                            "assists": "Assists", "total_points": "Total points","clean_sheets": "CS", "goals_conceded": "Gc",
-                            "goals_scored": "Goals Scored",
+    df.drop(["first_name", "second_name",'influence_rank',
+       'influence_rank_type', 'creativity_rank', 'creativity_rank_type',
+       'threat_rank', 'threat_rank_type', 'ict_index_rank',
+       'ict_index_rank_type', 'form_rank', 'form_rank_type',
+       'points_per_game_rank', 'points_per_game_rank_type',
+       'corners_and_indirect_freekicks_order',
+       'corners_and_indirect_freekicks_text', 'direct_freekicks_order',
+       'direct_freekicks_text', 'penalties_order', 'penalties_text', 'status',"points_per_game",'in_dreamteam',
+       'ep_this','ep_next','dreamteam_count','draft_rank'], axis=1, inplace=True)
+    df = df.rename(columns={"id": "ID",
+                            "element_type":   "position",
+                            "assists":        "assists", 
+                            "total_points":   "total_points",
+                            "clean_sheets":   "CS", 
+                            "goals_conceded": "Gc",
+                            "goals_scored":   "goals_scored",
                             "expected_goals": "xG", 
-                            "expected_involvements": "xGi", 
+                            "expected_involvements":   "xGi", 
                             "expected_goals_conceded": "xGc",
                             "code": "code",
                             })
 
     # Map team numbers to names
     team_map = {
-        1: "Arsenal",
-        2: "Aston Villa",
-        3: "Brentford",
-        4: "Bournemouth",
-        5: "Brighton & Hove Albion",
-        6: "Burnley",
-        7: "Chelsea",
-        8: "Crystal Palace",
-        9: "Everton",
-        10: "Fulham",
-        11: "Leeds United",
-        12: "Liverpool",
-        13: "Manchester City",
-        14: "Manchester United",
-        15: "Newcastle United",
-        16: "Nottingham Forest",
-        17: "Sunderland",
-        18: "Tottenham",
-        19: "West Ham",
-        20: "Wolverhampton"
+        1: "Arsenal", 2: "Aston Villa", 3: "Burnley", 4: "Bournemouth",
+        5: "Brentford", 6: "Brighton", 7: "Chelsea", 8: "Crystal Palace",
+        9: "Everton", 10: "Fulham", 11: "Leeds United", 12: "Liverpool",
+        13: "Manchester City", 14: "Manchester United", 15: "Newcastle United",
+        16: "Nottingham Forest", 17: "Sunderland", 18: "Tottenham",
+        19: "West Ham", 20: "Wolverhampton"
     }
-
-    df["team"] = df["team"].map(team_map)
 
     position_order = {1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD'}
 
+    df["team"]     = df["team"].map(team_map)
     df['position'] = df['position'].map(position_order)
 
     df.to_csv(output_file, index=False, encoding="utf-8-sig")

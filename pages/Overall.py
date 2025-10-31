@@ -9,22 +9,17 @@ st.set_page_config(page_title="FPL Draft Overall Dashboard", layout="wide")
 # ---------------- LOAD DATA ----------------
 @st.cache_data
 def load_all_data():
-    df, standings, gameweeks, fixtures = load_data(
-        gw_data_path="Data/gw_data.parquet",
-        standings_path="Data/league_standings.csv",
-        gameweeks_path="Data/gameweeks.csv",
-        fixtures_path="Data/fixtures.csv"
-    )
-    return df, standings
+    df, standings, gameweeks, fixtures = load_data()
+    return df, standings, gameweeks, fixtures
 
-df, standings = load_all_data()
+df, standings, gameweeks, fixtures = load_all_data()
 
 # ---------------- DASHBOARD TITLE ----------------
 st.title("FPL Draft Overall Dashboard")
 st.write("Explore managers and gameweek stats.")
 
 # ---------------- FILTERS ----------------
-min_gw, max_gw = int(df['gameweek'].min()), int(df['gameweek'].max())
+min_gw, max_gw = int(df['gw'].min()), int(df['gw'].max())
 selected_gw_range = st.slider(
     "Select Gameweek Range",
     min_value=min_gw,
@@ -33,21 +28,21 @@ selected_gw_range = st.slider(
 )
 selected_team = st.selectbox(
     "Select Manager",
-    options=[None] + sorted(df['team_name'].dropna().unique())
+    options=[None] + sorted(df['manager_team_name'].dropna().unique())
 )
 
 # ---------------- FILTER DATA ----------------
 filtered_df = df[
-    (df['gameweek'] >= selected_gw_range[0]) &
-    (df['gameweek'] <= selected_gw_range[1])
+    (df['gw'] >= selected_gw_range[0]) &
+    (df['gw'] <= selected_gw_range[1])
 ]
 if selected_team:
-    filtered_df = filtered_df[filtered_df['team_name'] == selected_team]
+    filtered_df = filtered_df[filtered_df['manager_team_name'] == selected_team]
 
 # ---------------- TEAM POINTS ----------------
 starting_players = get_starting_lineup(filtered_df)
-team_gw_points = calculate_team_gw_points(starting_players)
-team_avg_points = get_teams_avg_points(team_gw_points)
+team_gw_points   = calculate_team_gw_points(starting_players)
+team_avg_points  = get_teams_avg_points(team_gw_points)
 
 st.subheader("🏆 Team Points by Gameweek (Starting XI)")
 st.dataframe(team_gw_points, use_container_width=True)
@@ -76,18 +71,18 @@ for i, row in team_avg_points.iterrows():
 
 # ---------------- TEAM POINTS MELTED ----------------
 team_gw_points_melted = team_gw_points.reset_index().melt(
-    id_vars='team_name',
-    var_name='gameweek',
+    id_vars ='manager_team_name',
+    var_name='gw',
     value_name='points'
-) if not team_gw_points.empty else pd.DataFrame(columns=['team_name', 'gameweek', 'points'])
+) if not team_gw_points.empty else pd.DataFrame(columns=['manager_team_name', 'gw', 'points'])
 
 # Remove 'Total' column
-team_gw_points_melted = team_gw_points_melted[team_gw_points_melted['gameweek'] != 'Total']
+team_gw_points_melted = team_gw_points_melted[team_gw_points_melted['gw'] != 'Total']
 if not team_gw_points_melted.empty:
-    team_gw_points_melted['gameweek'] = team_gw_points_melted['gameweek'].astype(int)
+    team_gw_points_melted['gw'] = team_gw_points_melted['gw'].astype(int)
     team_gw_points_melted = team_gw_points_melted[
-        (team_gw_points_melted['gameweek'] >= selected_gw_range[0]) &
-        (team_gw_points_melted['gameweek'] <= selected_gw_range[1])
+        (team_gw_points_melted['gw'] >= selected_gw_range[0]) &
+        (team_gw_points_melted['gw'] <= selected_gw_range[1])
     ]
 
 # ---------------- LINE & CUMULATIVE CHARTS ----------------
@@ -98,9 +93,9 @@ with col1:
     if not team_gw_points_melted.empty:
         fig_line = px.line(
             team_gw_points_melted,
-            x='gameweek',
+            x='gw',
             y='points',
-            color='team_name',
+            color='manager_team_name',
             markers=True,
             title="Team Points per Gameweek"
         )
@@ -111,12 +106,12 @@ with col1:
 with col2:
     if not team_gw_points_melted.empty:
         team_cumsum = team_gw_points_melted.copy()
-        team_cumsum['cum_points'] = team_cumsum.groupby('team_name')['points'].cumsum()
+        team_cumsum['season_points'] = team_cumsum.groupby('manager_team_name')['points'].cumsum()
         fig_cumsum = px.line(
             team_cumsum,
-            x='gameweek',
-            y='cum_points',
-            color='team_name',
+            x='gw',
+            y='season_points',
+            color='manager_team_name',
             markers=True,
             title="Cumulative Team Points"
         )
@@ -154,13 +149,14 @@ with col4:
     if not team_gw_points_melted.empty:
         fig_scatter = px.scatter(
             team_gw_points_melted,
-            x='gameweek',
-            y='team_name',
+            labels=dict(x="Gameweek", y="Team", color="Points"),
+            x='gw',
+            y='manager_team_name',
             size='points',
             color='points',
             color_continuous_scale='Viridis',
             hover_data=['points'],
-            title="Team Points per Gameweek (Scatter)"
+            
         )
         st.plotly_chart(fig_scatter, use_container_width=True)
     else:

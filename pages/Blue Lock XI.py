@@ -40,6 +40,8 @@ def load_all_data():
 
 df, standings, gameweeks, fixtures = load_all_data()  # <-- unpack all 4
 
+
+
 # ---------------- MANAGER SELECTION ----------------
 manager_name = "Blue Lock XI"
 manager_df = get_manager_data(df, manager_name)
