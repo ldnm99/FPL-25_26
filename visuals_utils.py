@@ -99,6 +99,30 @@ def display_player_progression(manager_df: pd.DataFrame):
     st.plotly_chart(fig, use_container_width=True)
 
 
+#---------Defensive Contributions ---------
+def calc_defensive_points(row):
+    # Only Defenders and Midfielders are eligible
+    if row["position"] not in ["DEF", "MID"]:
+        return pd.Series({
+            "def_points": 0,
+            "progress": 0.0,
+            "total_contributions": 0
+        })
+    
+
+    contributions = row["gw_defensive_contribution"]
+    threshold = 10 if row["position"] == "DEF" else 12
+
+    earned = 2 if contributions >= threshold else 0
+    progress = min(contributions / threshold, 1.0)
+
+    return pd.Series({
+        "def_points": earned,
+        "progress": progress,
+        "total_contributions": contributions
+    })
+
+
 # ---------------- OTHER STATS ----------------
 def display_other_stats(manager_points: pd.DataFrame, top_performances: pd.DataFrame):
     st.header("📜 Other Stats")

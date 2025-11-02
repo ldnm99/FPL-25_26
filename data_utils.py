@@ -123,8 +123,6 @@ def get_team_total_points(starting_players: pd.DataFrame) -> pd.DataFrame:
 # ---------------- POINTS BY POSITION ----------------
 def points_per_player_position(starting_players: pd.DataFrame) -> pd.DataFrame:
 
-    print(starting_players['position'])
-
     if starting_players.empty:
         return pd.DataFrame(columns=['position','gw_points'])
     
