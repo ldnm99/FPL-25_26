@@ -1,6 +1,14 @@
 # data_utils.py
 import pandas as pd
 from datetime import datetime, timezone
+import io
+from supabase import create_client
+import streamlit as st
+
+# ---------------- SUPABASE CONFIG ----------------
+SUPABASE_URL = "https://xgesjwvsdatcqrzudoyg.supabase.co"
+SUPABASE_KEY = st.secrets["SUPABASE_ANON_KEY"]  # Streamlit secret
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ---------------- DATA LOADING ----------------
 def load_data(
@@ -21,6 +29,42 @@ def load_data(
     standings = pd.read_csv(standings_path)
     gameweeks = pd.read_csv(gameweeks_path)
     fixtures  = pd.read_csv(fixtures_path)
+
+    # Convert date columns to UTC datetime
+    gameweeks["deadline_time"] = pd.to_datetime(gameweeks["deadline_time"], utc=True)
+    fixtures["kickoff_time"]   = pd.to_datetime(fixtures["kickoff_time"], utc=True)
+
+    return df, standings, gameweeks, fixtures
+
+# ---------------- DATA LOADING ----------------
+def load_data2(
+    gw_data_file      ="gw_data.parquet",
+    standings_file    ="league_standings.csv",
+    gameweeks_file    ="gameweeks.csv",
+    fixtures_file     ="fixtures.csv",
+    bucket            ="data"
+):
+    """
+    Load all necessary FPL data from Supabase Storage.
+    Returns:
+        df: player GW data (Parquet)
+        standings: league standings (CSV)
+        gameweeks: GW deadlines (CSV)
+        fixtures: fixtures data (CSV)
+    """
+
+    def download_parquet(file_name):
+        data = supabase.storage.from_(bucket).download(file_name)
+        return pd.read_parquet(io.BytesIO(data))
+
+    def download_csv(file_name):
+        data = supabase.storage.from_(bucket).download(file_name)
+        return pd.read_csv(io.BytesIO(data))
+
+    df = download_parquet(gw_data_file)
+    standings = download_csv(standings_file)
+    gameweeks = download_csv(gameweeks_file)
+    fixtures  = download_csv(fixtures_file)
 
     # Convert date columns to UTC datetime
     gameweeks["deadline_time"] = pd.to_datetime(gameweeks["deadline_time"], utc=True)

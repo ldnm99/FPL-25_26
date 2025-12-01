@@ -1,6 +1,9 @@
 # menu.py
 import streamlit as st
+import requests
 from datetime import datetime, timezone
+
+import supabase
 from data_utils import (
     load_data,
     get_next_gameweek,
@@ -8,6 +11,25 @@ from data_utils import (
     get_starting_lineup,
     get_team_total_points
 )
+
+# --- GITHUB ACTIONS ETL TRIGGER ---
+OWNER = "lourencomarvao"
+REPO  = "FPL 25_26"
+TOKEN = st.secrets["TOKEN_STREAMLIT"]  
+
+def trigger_pipeline():
+    url = f"https://api.github.com/repos/{OWNER}/{REPO}/dispatches"
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "Authorization": f"token {TOKEN}",
+    }
+    payload = {
+        "event_type": "run_pipeline",
+        "client_payload": {"triggered_by": "streamlit"}
+    }
+
+    r = requests.post(url, json=payload, headers=headers)
+    return r.status_code, r.text
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="FPL Draft Menu", layout="wide")
@@ -17,12 +39,7 @@ st.title("⚽ Fantasy Premier League Draft Dashboard")
 st.markdown("### Select a page to view detailed stats")
 
 # --- LOAD DATA ---
-df, standings, gameweeks, fixtures = load_data(
-    gw_data_path="Data/gw_data.parquet",
-    standings_path="Data/league_standings.csv",
-    gameweeks_path="Data/gameweeks.csv",
-    fixtures_path="Data/fixtures.csv"
-)
+df, standings, gameweeks, fixtures = load_data()
 
 # --- NEXT GAMEWEEK & UPCOMING FIXTURES ---
 now = datetime.now(timezone.utc)
@@ -90,3 +107,28 @@ with right_col:
         )
     else:
         st.write("No fixtures available.")
+
+st.divider()
+# --- ETL PIPELINE TRIGGER ---
+st.markdown("### 📊 Data Extraction Pipeline")
+with open("last_updated.txt", "w") as f:
+    f.write(datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"))
+
+# Display button
+st.markdown("### ⚡ Update Data / Run Pipeline")
+if st.button("Run ETL Pipeline"):
+    with st.spinner("⏳ Triggering ETL pipeline…"):
+        status, msg = trigger_pipeline()
+    if status == 204:
+        st.success("✅ Pipeline triggered successfully! Check GitHub Actions tab.")
+    else:
+        st.error(f"❌ Error triggering pipeline: {status}\n{msg}")
+
+def get_last_update():
+    try:
+        data = supabase.storage.from_("data").download("last_updated.txt")
+        return data.decode("utf-8")
+    except:
+        return "Never"
+
+st.info(f"📅 Last pipeline update: {get_last_update()}")
