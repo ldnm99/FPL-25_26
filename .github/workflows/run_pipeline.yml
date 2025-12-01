@@ -1,0 +1,40 @@
+name: Run ETL Pipeline
+
+on:
+  repository_dispatch:
+    types: [run_pipeline]
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
+    steps:
+      # 1️⃣ Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2️⃣ Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      # 3️⃣ Install dependencies
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # 4️⃣ Run the main ETL pipeline
+      - name: Run ETL pipeline
+        run: |
+          python main.py
+
+      # 5️⃣ Upload generated data to Supabase
+      - name: Upload data to Supabase
+        run: |
+          python upload_database.py
